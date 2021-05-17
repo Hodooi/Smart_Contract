@@ -25,10 +25,11 @@
   "devDependencies": {
     "eth-json-rpc-filters": "4.1.1",
     "sol-merger": "2.0.1",
-    "truffle-plugin-verify": "0.3.11"
+    "truffle-plugin-verify": "^0.5.8"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.3.0",
+    "@truffle/hdwallet-provider": "^1.4.0",
     "babel-core": "6.26.3",
     "babel-loader": "7.1.4",
     "babel-plugin-transform-runtime": "6.23.0",

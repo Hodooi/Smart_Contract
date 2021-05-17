@@ -28,7 +28,6 @@ require("dotenv").config();
 const web3 = require("web3");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 const privateKey = process.env.PRIVATE_KEY || "";
-const apiKey = process.env.API_KEY || "";
 
 module.exports = {
   /**
@@ -130,7 +129,8 @@ module.exports = {
     }
   },
   api_keys: {
-    bscscan: apiKey
+    bscscan: process.env.BSC_API_KEY,
+    etherscan: process.env.ETHERSCAN_API_KEY,
   },
   plugins: [
     'truffle-plugin-verify'

@@ -18,7 +18,7 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
@@ -86,12 +86,7 @@ module.exports = {
 
     bsct: {
       // networkCheckTimeout: 10000,
-      /*provider: () => new HDWalletProvider({
-        privateKey: '',
-        providerOrUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545',
-        chainId: 97
-      }),*/
-      provider: () => new HDWalletProvider(`90cb9f7f8ff4da45e53902e8a99a7fc5ebccb8d78827d00a5fb1dffef515f639`, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      provider: () => new HDWalletProvider(privateKey, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
       // gas: 30000000,
       confirmations: 10,
@@ -132,5 +127,12 @@ module.exports = {
        // evmVersion: "byzantium"
       }
     }
-  }
+  },
+  api_keys: {
+    bscscan: process.env.BSC_API_KEY,
+    etherscan: process.env.ETHERSCAN_API_KEY,
+  },
+  plugins: [
+    'truffle-plugin-verify'
+  ]
 };
