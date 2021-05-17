@@ -18,7 +18,7 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
@@ -28,6 +28,7 @@ require("dotenv").config();
 const web3 = require("web3");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 const privateKey = process.env.PRIVATE_KEY || "";
+const apiKey = process.env.API_KEY || "";
 
 module.exports = {
   /**
@@ -86,12 +87,7 @@ module.exports = {
 
     bsct: {
       // networkCheckTimeout: 10000,
-      /*provider: () => new HDWalletProvider({
-        privateKey: '',
-        providerOrUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545',
-        chainId: 97
-      }),*/
-      provider: () => new HDWalletProvider(`90cb9f7f8ff4da45e53902e8a99a7fc5ebccb8d78827d00a5fb1dffef515f639`, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      provider: () => new HDWalletProvider(privateKey, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
       // gas: 30000000,
       confirmations: 10,
@@ -122,15 +118,21 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.5.1",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.5.16",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       settings: {          // See the solidity docs for advice about optimization and evmVersion
        optimizer: {
          enabled: false,
          runs: 200
        },
-       evmVersion: "byzantium"
+       // evmVersion: "byzantium"
       }
     }
-  }
+  },
+  api_keys: {
+    bscscan: apiKey
+  },
+  plugins: [
+    'truffle-plugin-verify'
+  ]
 };
