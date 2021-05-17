@@ -146,10 +146,15 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         address payable creator = payable(IERC1155(item.tokenAddress).getCreator(item.tokenId));
         uint256 loyalty = IERC1155(item.tokenAddress).getLoyaltyFee(item.tokenId);
 
-        uint256 itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
-        require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
-
-        _paymentAmount = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
+        if(_paymentToken != address(0)){
+            uint256 itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
+            require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
+            _paymentAmount = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
+        }else{
+            uint256 itemPrice = item.price.div(item.quantity).mul(_quantity);
+            require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
+            require (msg.value >= _paymentAmount, 'Invalid price');
+        }
 
         uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
 
@@ -167,7 +172,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
                     fee.itemFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
                     ERC20(_paymentToken).safeTransferFrom(_buyer, address(this), _paymentAmount);
                     IERC20(_paymentToken).transfer(creator, itemPrice.mul(artistLoyaltyFee).div(ZOOM_FEE));
-                        IERC20(_paymentToken).transfer(item.owner, itemPrice.mul(ZOOM_FEE - artistLoyaltyFee).div(ZOOM_FEE));
+                    IERC20(_paymentToken).transfer(item.owner, itemPrice.mul(ZOOM_FEE - artistLoyaltyFee).div(ZOOM_FEE));
                     if (ref.buyerRef != address(0)) {
                         IERC20(_paymentToken).transfer(ref.buyerRef, fee.itemFee.mul(referralFee).div(ZOOM_FEE));
                     }
@@ -296,7 +301,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     public returns (uint256 _idx){
         uint balance = IERC1155(_tokenAddress).balanceOf(msg.sender, _tokenId);
         require(balance >= _quantity, 'Not enough token for sale');
-        require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
+        if(_paymentToken != address(0)){
+            require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
+        }
 
         IERC1155(_tokenAddress).safeTransferFrom(msg.sender, address(this), _tokenId, _quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
 
@@ -324,17 +331,22 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     public returns (uint256 _idx){
         _idx = numberBidOrders;
         Item memory item = items[_itemId];
+
         require(item.owner != address(0), 'Item not exist');
         require(item.status == 1, 'Item unavailable');
         require(item.quantity >= _quantity, 'Quantity invalid');
         require(item.owner != msg.sender, 'Owner cannot bid');
         require(item.mask == 2, 'Not for bid');
         require(item.expired >= block.timestamp, 'Item expired');
-        require(whitelistPayableToken[_bidToken] == 1, 'Payment token not support');
-        uint256 estimateUSDT = estimateUSDT(_bidToken, _bidAmount);
-        estimateUSDT = estimateUSDT.div(marketFee + ZOOM_FEE).mul(ZOOM_FEE);
-        require(estimateUSDT >= item.minBid, 'Bid amount must greater than min bid');
-        require(IERC20(_bidToken).approve(address(this), _bidAmount) == true, 'Approve token for bid fail');
+
+        if(_bidToken != address(0)){
+            require(whitelistPayableToken[_bidToken] == 1, 'Payment token not support');
+
+            uint256 estimateUSDT = estimateUSDT(_bidToken, _bidAmount);
+            estimateUSDT = estimateUSDT.div(marketFee + ZOOM_FEE).mul(ZOOM_FEE);
+            require(estimateUSDT >= item.minBid, 'Bid amount must greater than min bid');
+            require(IERC20(_bidToken).approve(address(this), _bidAmount) == true, 'Approve token for bid fail');
+        }
 
         BidOrder storage bidOrder = bidOrders[_idx];
         bidOrder.fromAddress = msg.sender;
@@ -352,12 +364,17 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     function buy(uint256 _itemId, uint256 _quantity, address _paymentToken, uint256 _paymentAmount)
     external payable returns (bool) {
         Item storage item = items[_itemId];
+
         require(item.owner != address(0), 'Item not exist');
-        require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
+        if(_paymentToken != address(0)){
+            require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
+        }
+
         require(item.status == 1, 'Item unavailable');
         require(item.quantity >= _quantity, 'Invalid quantity');
         //        require(item.expired >= block.timestamp, 'Item expired');
         require(item.mask == 1, 'Not for sale');
+
         emit Buy(_itemId, _quantity, _paymentToken, _paymentAmount);
         if (executeOrder(msg.sender, _itemId, _quantity, _paymentToken, _paymentAmount)) {
             return true;
