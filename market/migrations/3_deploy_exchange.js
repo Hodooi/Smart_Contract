@@ -7,13 +7,13 @@ const hodooiExchange = artifacts.require("HodooiExchange");
 //    const bnb = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
 //    test net
-const bnbRouter = 0x0000000000000000000000000000000000000000;
-const usdt = 0x584119951fA66bf223312A29FB6EDEBdd957C5d8;
-const busd = 0x1a0B0c776950e31b05FB25e3d7E14f99592bFB71;
-const bnb = 0xD5513cbe97986e7D366B8979D887CB76e441b148;
+// const bnbRouter = 0x0000000000000000000000000000000000000000;
+// const usdt = 0x584119951fA66bf223312A29FB6EDEBdd957C5d8;
+// const busd = 0x1a0B0c776950e31b05FB25e3d7E14f99592bFB71;
+// const bnb = 0xD5513cbe97986e7D366B8979D887CB76e441b148;
 
 module.exports = function(deployer) {
-  deployer.deploy(hodooiExchange, bnbRouter, usdt, busd, bnb);
+  deployer.deploy(hodooiExchange);
 };
 
 // testnet

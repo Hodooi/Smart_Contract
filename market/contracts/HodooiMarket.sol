@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -146,12 +147,12 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         address payable creator = payable(IERC1155(item.tokenAddress).getCreator(item.tokenId));
         uint256 loyalty = IERC1155(item.tokenAddress).getLoyaltyFee(item.tokenId);
 
+        uint256 itemPrice = item.price.div(item.quantity).mul(_quantity);
         if(_paymentToken != address(0)){
-            uint256 itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
+            itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
             require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
             _paymentAmount = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
         }else{
-            uint256 itemPrice = item.price.div(item.quantity).mul(_quantity);
             require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
             require (msg.value >= _paymentAmount, 'Invalid price');
         }
@@ -342,9 +343,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         if(_bidToken != address(0)){
             require(whitelistPayableToken[_bidToken] == 1, 'Payment token not support');
 
-            uint256 estimateUSDT = estimateUSDT(_bidToken, _bidAmount);
-            estimateUSDT = estimateUSDT.div(marketFee + ZOOM_FEE).mul(ZOOM_FEE);
-            require(estimateUSDT >= item.minBid, 'Bid amount must greater than min bid');
+            uint256 estimateBidUSDT = estimateUSDT(_bidToken, _bidAmount);
+            estimateBidUSDT = estimateBidUSDT.div(marketFee + ZOOM_FEE).mul(ZOOM_FEE);
+            require(estimateBidUSDT >= item.minBid, 'Bid amount must greater than min bid');
             require(IERC20(_bidToken).approve(address(this), _bidAmount) == true, 'Approve token for bid fail');
         }
 

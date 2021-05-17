@@ -9,7 +9,7 @@ import "./token/ERC1155Tradeble.sol";
 contract HodooiNFT is ERC1155Tradeble {
     constructor()
         public
-        ERC1155Tradable("HODOOI NFT General", "HODOOI")
+        ERC1155Tradeble("HODOOI NFT General", "HODOOI")
     {
         _setBaseMetadataURI("https://hodooi-meta.sotatek.work/");
     }

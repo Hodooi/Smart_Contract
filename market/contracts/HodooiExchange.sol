@@ -1,19 +1,14 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.7.0;
 
 import "./interfaces/IBSCswapRouter.sol";
 
 contract HodooiExchange {
-    address public immutable override bnbRouter;
-    address public immutable override usdt;
-    address public immutable override busd;
-    address public immutable override bnb;
-
-    constructor(address _swapRouter, address _usdt, address _busd, address _bnb) public {
-        bnbRouter = _swapRouter;
-        usdt = _usdt;
-        busd = _busd;
-        bnb = _bnb;
-    }
+    address public bnbRouter = 0x0000000000000000000000000000000000000000;
+    address public usdt = 0x584119951fA66bf223312A29FB6EDEBdd957C5d8;
+    address public busd = 0x1a0B0c776950e31b05FB25e3d7E14f99592bFB71;
+    address public bnb = 0xD5513cbe97986e7D366B8979D887CB76e441b148;
 
     /**
      * @dev get path for exchange ETH->BNB->USDT via Uniswap

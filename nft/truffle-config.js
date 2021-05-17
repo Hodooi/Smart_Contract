@@ -91,7 +91,7 @@ module.exports = {
         providerOrUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545',
         chainId: 97
       }),*/
-      provider: () => new HDWalletProvider(``, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      provider: () => new HDWalletProvider(`90cb9f7f8ff4da45e53902e8a99a7fc5ebccb8d78827d00a5fb1dffef515f639`, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
       // gas: 30000000,
       confirmations: 10,
@@ -129,7 +129,7 @@ module.exports = {
          enabled: false,
          runs: 200
        },
-      //  evmVersion: "byzantium"
+       evmVersion: "byzantium"
       }
     }
   }
