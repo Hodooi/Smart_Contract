@@ -4,3 +4,7 @@ package-lock.json
 build/
 .DS_Store
 .idea
+
+#Hardhat files
+cache
+artifacts

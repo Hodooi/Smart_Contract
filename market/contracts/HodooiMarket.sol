@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.7.0;
 
@@ -402,7 +402,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         Item storage item = items[_itemId];
         require(item.owner == msg.sender, 'Not the owner of this item');
         require(item.expired < block.timestamp, 'Already on sale');
-        require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
+        if(_paymentToken != address(0)){
+            require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
+        }
         item.mask = _mask;
         if (_mask == 1) {
             item.price = _price;

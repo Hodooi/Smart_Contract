@@ -1,14 +1,27 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.7.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IBSCswapRouter.sol";
 
-contract HodooiExchange {
-    address public bnbRouter = 0x0000000000000000000000000000000000000000;
-    address public usdt = 0x584119951fA66bf223312A29FB6EDEBdd957C5d8;
-    address public busd = 0x1a0B0c776950e31b05FB25e3d7E14f99592bFB71;
-    address public bnb = 0xD5513cbe97986e7D366B8979D887CB76e441b148;
+contract HodooiExchange is Ownable {
+    address public bnbRouter;
+    address public usdt;
+    address public busd;
+    address public bnb;
+
+    constructor(address _bnbRouter, address _usdt, address _busd, address _bnb) public {
+        bnbRouter = _bnbRouter;
+        usdt = _usdt;
+        busd = _busd;
+        bnb = _bnb;
+    }
+
+    function setBnbRouter(address _bnbRouter) onlyOwner public returns (bool) {
+        bnbRouter = _bnbRouter;
+        return true;
+    }
 
     /**
      * @dev get path for exchange ETH->BNB->USDT via Uniswap
