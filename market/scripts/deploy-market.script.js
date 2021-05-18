@@ -29,7 +29,7 @@ async function main() {
 
   console.log("HodooiExchange deployed to:", hodooiExchange.address);
 
-  // DEPLOY REFFERAL
+  // DEPLOY REFERRAL
   const HodooiReferral = await hre.ethers.getContractFactory("HodooiReferral");
   const hodooiReferral = await HodooiReferral.deploy(admin.address);
 
@@ -45,7 +45,7 @@ async function main() {
 
   console.log("HodooiMarket deployed to:", hodooiMarket.address);
 
-  // CONFIGURE
+  // CONFIGURE MARKET
   const marketFee = 250;
   const firstSellFee = 1500;
   const artistLoyaltyFee = 5000;
@@ -55,6 +55,9 @@ async function main() {
   await hodooiMarket.setReferralContract(hodooiReferral.address);
   await hodooiMarket.setSystemFee(marketFee,  firstSellFee,  artistLoyaltyFee,  referralFee);
   await hodooiMarket.setWhiteListPayableToken(usdt, 1);
+
+  // CONFIGURE REFERRAL
+  await hodooiReferral.setMarket(hodooiMarket.address);
 
   await hre.run("verify:verify", {
     address: hodooiExchange.address,

@@ -23,6 +23,10 @@ contract HodooiReferral is Ownable {
         sotaMarket = _marketAddress;
     }
 
+    function setAdmin(address _admin) public onlyOwner {
+        admin = _admin;
+    }
+
     function getReferral(address _user) public view returns(address){
         if (referralData[_user] == address (0)) {
             return sotaMarket;
