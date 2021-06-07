@@ -85,6 +85,12 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     event UpdateBid(uint256 _bidId, uint256 _quantity, address _bidToken, uint256 _bidAmount, uint256 _expiration, uint _status);
     event AdminMigrateData(uint256 _itemId, address _owner, address _toContract);
 
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
+
     function pause() onlyOwner public {
         _pause();
     }
@@ -158,8 +164,8 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
 
         uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
 
-        ref.buyerRef = payable(getReferralAddress(_buyer));
-        ref.sellerRef = payable(getReferralAddress(item.owner));
+        ref.buyerRef = getReferralAddress(_buyer);
+        ref.sellerRef = getReferralAddress(item.owner);
         if (lastSalePrice[item.tokenAddress][item.tokenId] == 0) { // first sale
             if (msg.value == 0) {
                 if (item.tokenAddress == farmingContract) {
