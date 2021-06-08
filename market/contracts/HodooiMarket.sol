@@ -36,6 +36,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     uint256 public numberItems;
     uint256 public numberBidOrders;
 
+    //A record of bidding status
+    bool public biddingStatus;
+
     struct Item {
         address owner;
         address tokenAddress;
@@ -84,12 +87,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     event AcceptBid(uint256 _bidOrderId, bool _result);
     event UpdateBid(uint256 _bidId, uint256 _quantity, address _bidToken, uint256 _bidAmount, uint256 _expiration, uint _status);
     event AdminMigrateData(uint256 _itemId, address _owner, address _toContract);
-
-    // Function to receive Ether. msg.data must be empty
-    receive() external payable {}
-
-    // Fallback function is called when msg.data is not empty
-    fallback() external payable {}
+    event EnableBidding(address _account);
 
     function pause() onlyOwner public {
         _pause();
@@ -131,10 +129,16 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         return true;
     }
 
+    function setBiddingStatus() onlyOwner public {
+        biddingStatus = true;
+        emit EnableBidding(msg.sender);
+    }
+
 
     function getReferralAddress(address _user) private returns(address payable) {
         return payable(IReferral(referralContract).getReferral(_user));
     }
+
 
     Fee fee;
     ReferralAddress ref;
@@ -153,8 +157,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         address payable creator = payable(IERC1155(item.tokenAddress).getCreator(item.tokenId));
         uint256 loyalty = IERC1155(item.tokenAddress).getLoyaltyFee(item.tokenId);
 
-        uint256 itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
+        uint256 itemPrice = item.price.div(item.quantity).mul(_quantity);
         if(_paymentToken != address(0)){
+            itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
             require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
             _paymentAmount = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
         }else{
@@ -337,7 +342,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     public returns (uint256 _idx){
         _idx = numberBidOrders;
         Item memory item = items[_itemId];
-
+        require(biddingStatus,'Bidding is disabled');
         require(item.owner != address(0), 'Item not exist');
         require(item.status == 1, 'Item unavailable');
         require(item.quantity >= _quantity, 'Quantity invalid');
@@ -372,7 +377,6 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         Item storage item = items[_itemId];
 
         require(item.owner != address(0), 'Item not exist');
-        require(msg.sender != item.owner, 'You are the owner');
         if(_paymentToken != address(0)){
             require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
         }
@@ -382,9 +386,10 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         //        require(item.expired >= block.timestamp, 'Item expired');
         require(item.mask == 1, 'Not for sale');
 
-        emit Buy(_itemId, _quantity, _paymentToken, _paymentAmount);
+        
         if (executeOrder(msg.sender, _itemId, _quantity, _paymentToken, _paymentAmount)) {
             return true;
+            emit Buy(_itemId, _quantity, _paymentToken, _paymentAmount);
         }
         return false;
     }
@@ -440,7 +445,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     function cancelListed(uint256 _itemId) public returns (bool) {
         Item storage item = items[_itemId];
         require(item.owner == msg.sender, 'Not the owner of this item');
-        // require(item.expired < block.timestamp, 'Already on sale');
+        require(item.expired < block.timestamp, 'Already on sale');
 
         IERC1155(item.tokenAddress).safeTransferFrom(address(this), msg.sender,  item.tokenId, item.quantity,
             abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
