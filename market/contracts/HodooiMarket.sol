@@ -172,9 +172,8 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
             require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
             _paymentAmount = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
         }else{
-            uint256 itemPrice = item.price.div(item.quantity).mul(_quantity);
-            require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
-            require (msg.value >= _paymentAmount, 'Invalid price');
+            require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price (BNB)');
+            require (msg.value >= _paymentAmount, 'Invalid price (BNB)');
         }
 
         uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
