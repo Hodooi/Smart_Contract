@@ -88,6 +88,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
     event UpdateBid(uint256 _bidId, uint256 _quantity, address _bidToken, uint256 _bidAmount, uint256 _expiration, uint _status);
     event AdminMigrateData(uint256 _itemId, address _owner, address _toContract);
     event BiddingStatus(address _account, bool _status);
+    event PayBack(address _account, uint256 _repay);
 
     // Function to receive Ether. msg.data must be empty
     receive() external payable {}
@@ -178,10 +179,11 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
             require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
             if(_paymentToken == address(0)){
                 // excess cash (BNB)
-                uint256 _repay = _paymentAmount.sub(itemPrice);
+                uint256 _repay = _paymentAmount.sub(itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE));
                 if(_repay > 0){
                     address payable _payee = payable(_buyer);
                     _payee.transfer(_repay);
+                    emit PayBack(_buyer, _repay);
                 }
             }else{
                 // erc20
@@ -190,7 +192,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         }else{
             // for acceptSale
             require (_paymentAmount >= itemPrice, 'Invalid min price');
-            itemPrice = estimateToken(_paymentToken, _paymentAmount);
+            itemPrice = estimateToken(_paymentToken, _paymentAmount.sub(_paymentAmount.mul(marketFee).div(ZOOM_FEE)));
         }
 
         uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
