@@ -169,6 +169,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         uint256 loyalty = IERC1155(item.tokenAddress).getLoyaltyFee(item.tokenId);
 
         uint256 itemPrice = estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
+        uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
 
         if(_paymentToken == address(0)){
             require (msg.value >= _paymentAmount, 'Invalid price (BNB)');
@@ -193,9 +194,8 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
             // for acceptSale
             require (_paymentAmount >= itemPrice, 'Invalid min price');
             itemPrice = estimateToken(_paymentToken, _paymentAmount.div(ZOOM_FEE + marketFee).mul(ZOOM_FEE));
+            priceInUsdt = itemPrice;
         }
-
-        uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
 
         ref.buyerRef = getReferralAddress(_buyer);
         ref.sellerRef = getReferralAddress(item.owner);
@@ -328,9 +328,15 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder {
         IERC1155(item.tokenAddress).safeTransferFrom(address(this), _buyer, item.tokenId, _quantity,
             abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
         lastSalePrice[item.tokenAddress][item.tokenId] = priceInUsdt.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
-        item.price = item.price.sub(priceInUsdt);
+
+        // for sale
+        if(item.mask == 1){
+            item.price = item.price.sub(priceInUsdt);
+        }
+
         item.quantity = item.quantity.sub(_quantity);
         if (item.quantity == 0) {
+            item.price = 0;
             item.status = 2; // sold out
         }
         return true;
