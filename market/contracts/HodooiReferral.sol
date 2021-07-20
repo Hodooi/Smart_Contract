@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract HodooiReferral is Ownable {
     address public admin;
-    address public sotaMarket;
+    address public market;
 
     constructor(address _admin) public {
         admin = _admin;
@@ -20,7 +20,7 @@ contract HodooiReferral is Ownable {
     }
 
     function setMarket(address _marketAddress) public onlyOwner {
-        sotaMarket = _marketAddress;
+        market = _marketAddress;
     }
 
     function setAdmin(address _admin) public onlyOwner {
@@ -29,7 +29,7 @@ contract HodooiReferral is Ownable {
 
     function getReferral(address _user) public view returns(address){
         if (referralData[_user] == address (0)) {
-            return sotaMarket;
+            return market;
         }
         return referralData[_user];
     }
