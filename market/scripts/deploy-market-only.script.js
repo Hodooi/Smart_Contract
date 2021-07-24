@@ -7,9 +7,10 @@ async function main() {
   const exchange = "0x0000000000000000000000000000000000000000";
   const referral = "0x0000000000000000000000000000000000000000";
   const usdt = "0x0000000000000000000000000000000000000000";
+  const oldMarket = "0x9763f83B796894E03F9b4850665F79a577EA2d05";
   /// DEPLOY MARKET
   const HodooiMarket = await hre.ethers.getContractFactory("HodooiMarket");
-  const hodooiMarket = await HodooiMarket.deploy();
+  const hodooiMarket = await HodooiMarket.deploy(oldMarket);
 
   await hodooiMarket.deployed();
 
@@ -28,7 +29,7 @@ async function main() {
 
   await hre.run("verify:verify", {
     address: hodooiMarket.address,
-    constructorArguments: [],
+    constructorArguments: [oldMarket],
   })
 }
 

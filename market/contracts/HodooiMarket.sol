@@ -8,22 +8,25 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
 import "./interfaces/IERC1155.sol";
 import "./interfaces/IBSCswapRouter.sol";
 import "./interfaces/IReferral.sol";
 import "./interfaces/IExchange.sol";
+import "./interfaces/IMarket.sol";
 
 import "./token/ERC1155Holder.sol";
 import "./dependencies/VerifySign.sol";
 
-contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
+contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     address public farmingContract;
     address public referralContract;
     address public exchangeContract;
+    address public oldMarket;
 
     uint256 public constant ZOOM_USDT = 10 ** 6;
     uint256 public constant ZOOM_FEE = 10 ** 4;
@@ -90,6 +93,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
     event BiddingStatus(address _account, bool _status);
     event PayBack(address _account, uint256 _repay);
 
+    constructor(address _oldMarket) public {
+        oldMarket = _oldMarket;
+    }
     // Function to receive Ether. msg.data must be empty
     receive() external payable {}
 
@@ -325,8 +331,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
                 }
             }
         }
-        IERC1155(item.tokenAddress).safeTransferFrom(address(this), _buyer, item.tokenId, _quantity,
-            abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+        IERC1155(item.tokenAddress).safeTransferFrom(address(this), _buyer, item.tokenId, _quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
         lastSalePrice[item.tokenAddress][item.tokenId] = priceInUsdt.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
 
         // for sale
@@ -445,7 +450,6 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
 
         require(item.status == 1, 'Item unavailable');
         require(item.quantity >= _quantity, 'Invalid quantity');
-        //        require(item.expired >= block.timestamp, 'Item expired');
         require(item.mask == 2, 'Not for bid');
 
         if (executeOrder(_buyer, _itemId, _quantity, _paymentToken, _paymentAmount)) {
@@ -475,7 +479,6 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
     public returns (bool) {
         Item storage item = items[_itemId];
         require(item.owner == msg.sender, 'Not the owner of this item');
-        //        require(item.expired < block.timestamp, 'Already on sale');
         if(_paymentToken != address(0)){
             require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
         }
@@ -510,7 +513,6 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
     function cancelListed(uint256 _itemId) public returns (bool) {
         Item storage item = items[_itemId];
         require(item.owner == msg.sender, 'Not the owner of this item');
-        // require(item.expired < block.timestamp, 'Already on sale');
 
         IERC1155(item.tokenAddress).safeTransferFrom(address(this), msg.sender,  item.tokenId, item.quantity,
             abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
@@ -522,7 +524,6 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
         return true;
     }
 
-    /// withdraw allows the owner to transfer out the balance of the contract.
     function withdrawFunds(address payable _beneficiary, address _tokenAddress) external onlyOwner {
         uint _withdrawAmount;
         if (_tokenAddress == address(0)) {
@@ -537,40 +538,47 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign {
 
     function adminCancelList(uint256 _itemId, address _receiver) external onlyOwner {
         Item storage item = items[_itemId];
-        //        require(item.expired < block.timestamp, 'Already on sale');
-
-        IERC1155(item.tokenAddress).safeTransferFrom(address(this), _receiver,  item.tokenId, item.quantity,
-            abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
-
+        IERC1155(item.tokenAddress).safeTransferFrom(address(this), _receiver,  item.tokenId, item.quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
         item.status = 3;
         item.quantity = 0;
         item.price = 0;
         emit CancelListed(_itemId, _receiver);
     }
 
-    function adminMigrateData(uint256 _itemId, address _owner, address _tokenAddress, address _paymentToken,
-        uint256 _tokenId, uint256 _quantity, uint256 _expired, uint256 _status, uint256 _minBid,
-        uint256 _price, uint256 _mask, uint256 _lastSalePrice) external onlyOwner whenPaused {
+    function adminMigrateData(uint256 _fromOrderId, uint256 _toOrderId) external onlyOwner() {
+        for (uint256 _itemId = _fromOrderId; _itemId <= _toOrderId; _itemId++) {
+            ( address _owner, address _tokenAddress, address _paymentToken, uint256 _tokenId, uint256 _quantity, uint256 _expired, uint256 _status, uint256 _minBid, uint256 _price, uint256 _mask ) = IMarket(oldMarket).items(_itemId);
+            numberItems = _itemId;
+            if (_quantity > 0) {
+                IMarket(oldMarket).adminCancelList(_itemId, address(this));
+                Item memory newOrder;
+                newOrder.tokenId = _tokenId;
+                newOrder.owner = _owner;
+                newOrder.tokenAddress = _tokenAddress;
+                newOrder.quantity = _quantity;
+                newOrder.expired = _expired;
+                newOrder.status = _status;
+                newOrder.price = _price;
+                newOrder.minBid = _minBid;
+                newOrder.mask = _mask;
+                newOrder.paymentToken = _paymentToken;
+                items[_itemId] = newOrder;
+            }
+        }
+    }
 
-        if (_quantity > 0) {
-            IERC1155(_tokenAddress).safeTransferFrom(msg.sender, address(this), _tokenId, _quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+    function adminMigrateLastSale(address[] memory _tokenAddress, uint256[] memory _tokenId, uint256[] memory _price) external onlyOwner() {
+        for (uint i = 0; i < _tokenAddress.length; i++) {
+            lastSalePrice[_tokenAddress[i]][_tokenId[i]] = _price[i];
         }
-        Item storage item = items[_itemId];
-        item.tokenId = _tokenId;
-        item.owner = _owner;
-        item.tokenAddress = _tokenAddress;
-        item.quantity = _quantity;
-        item.expired = _expired;
-        item.status = _status;
-        item.price = _price;
-        item.minBid = _minBid;
-        item.mask = _mask;
-        item.paymentToken = _paymentToken;
-        numberItems = _itemId;
-        if (_lastSalePrice > 0) {
-            lastSalePrice[_tokenAddress][_tokenId] = _lastSalePrice;
-        }
-        AdminMigrateData(_itemId, _owner, address(this));
+    }
+
+    function transferOwnerOldMarket(address _newOwner) external onlyOwner() {
+        IMarket(oldMarket).transferOwnership(_newOwner);
+    }
+
+    function getLastSale(address _tokenAddress, uint256 _tokenId) public view returns (uint256) {
+        return lastSalePrice[_tokenAddress][_tokenId];
     }
 
     function _verifyBuyer(bytes memory _buyerSignature, address _buyer, uint256 _orderId, uint256 _quantity, uint256 _price, address _paymentToken)
