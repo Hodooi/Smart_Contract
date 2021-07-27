@@ -16,8 +16,8 @@ contract VerifySign {
     }
 
     // Verify signature function
-    function verify(bytes memory _buyerSignature, address _buyer, uint256 _orderId, uint256 _quantity, uint256 _paymentAmount, address _paymentToken) public pure returns (bool) {
-        bytes32 messageHash = getMessageHash(_buyer, _orderId, _quantity, _paymentAmount, _paymentToken);
+    function verify(bytes memory _buyerSignature, address _buyer, uint256 _itemId, uint256 _quantity, uint256 _paymentAmount, address _paymentToken) public pure returns (bool) {
+        bytes32 messageHash = getMessageHash(_buyer, _itemId, _quantity, _paymentAmount, _paymentToken);
         bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
         return getSignerAddress(ethSignedMessageHash, _buyerSignature) == _buyer;
