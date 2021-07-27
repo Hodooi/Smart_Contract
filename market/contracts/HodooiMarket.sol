@@ -36,6 +36,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
     uint256 public artistLoyaltyFee;
     uint256 public referralFee;
 
+    uint256 public limitAuction;
     uint256 public numberItems;
     uint256 public numberBidOrders;
     //A record of bidding status
@@ -82,7 +83,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
     event Withdraw(address indexed beneficiary, uint256 withdrawAmount);
     event FailedWithdraw(address indexed beneficiary, uint256 withdrawAmount);
     event Buy(uint256 _itemId, uint256 _quantity, address _paymentToken, uint256 _paymentAmount);
-    event AcceptSale(address _buyer, uint256 _itemId, uint256 _quantity, address _paymentToken, uint256 _paymentAmount);
+    event AcceptSale(address _buyer, uint256 _itemId, uint256 _quantity, address _paymentToken, uint256 _paymentAmount, uint256 _status);
     event UpdateItem(uint256 _itemId, uint256 _mask, uint256 _price, address _paymentToken, uint256 _expiration);
     event CancelListed(uint256 _itemId, address _receiver);
     event Bid(uint _bidId, uint256 _itemId, uint256 _quantity, address _bidToken, uint256 _bidAmount, uint256 _expiration);
@@ -93,8 +94,9 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
     event BiddingStatus(address _account, bool _status);
     event PayBack(address _account, uint256 _repay);
 
-    constructor(address _oldMarket) public {
+    constructor(address _oldMarket, uint256 _limit) public {
         oldMarket = _oldMarket;
+        limitAuction = _limit;
     }
     // Function to receive Ether. msg.data must be empty
     receive() external payable {}
@@ -125,6 +127,11 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
         firstSellFee = _firstSellFee;
         artistLoyaltyFee = _artistLoyaltyFee;
         referralFee = _referralFee;
+        return true;
+    }
+
+    function setLimitAuction(uint256 _limit) onlyOwner public returns (bool) {
+        limitAuction = _limit;
         return true;
     }
 
@@ -331,7 +338,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
                 }
             }
         }
-        IERC1155(item.tokenAddress).safeTransferFrom(address(this), _buyer, item.tokenId, _quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+        _1155SafeTransferFrom(item.tokenAddress, address(this), _buyer, item.tokenId, _quantity);
         lastSalePrice[item.tokenAddress][item.tokenId] = priceInUsdt.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
 
         // for sale
@@ -354,23 +361,20 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
         if(_paymentToken != address(0)){
             require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
         }
+        if (_mask == 2) {
+            require(_quantity <= limitAuction, 'Quantity exceeded limit');
+        }
 
-        IERC1155(_tokenAddress).safeTransferFrom(msg.sender, address(this), _tokenId, _quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+        _1155SafeTransferFrom(_tokenAddress, msg.sender, address(this), _tokenId, _quantity);
 
         _idx = numberItems;
-        Item storage item = items[_idx];
-        item.tokenId = _tokenId;
-        item.owner = msg.sender;
-        item.tokenAddress = _tokenAddress;
-        item.quantity = _quantity;
-        item.expired = block.timestamp.add(_expiration);
-        item.status = 1;
-        item.price = _price;
+        uint256 _minBid = 0;
         if (_mask == 2) {
-            item.minBid = _price;
+            _minBid = _price;
         }
-        item.mask = _mask;
-        item.paymentToken = _paymentToken;
+        Item memory data = Item(msg.sender, _tokenAddress, _paymentToken, _tokenId, _quantity, _expiration, 1, _minBid, _price, _mask);
+        _createItem(_idx, data);
+
         emit List(_idx, _tokenAddress, _tokenId, _quantity, _mask, _price, _paymentToken, _expiration);
         ++numberItems;
         return _idx;
@@ -442,20 +446,23 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
         require(_buyer != address(0), 'Buyer not exist');
         require(msg.sender == item.owner, 'You are not owner');
         require(_buyer != item.owner, 'You are the owner');
-        require(_verifyBuyer(_buyerSignature, _buyer, _itemId, _quantity, _paymentAmount, _paymentToken));
 
         if(_paymentToken != address(0)){
             require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
         }
 
         require(item.status == 1, 'Item unavailable');
-        require(item.quantity >= _quantity, 'Invalid quantity');
+        require(item.quantity == _quantity, 'Invalid quantity');
         require(item.mask == 2, 'Not for bid');
 
+        require(verify(_buyerSignature, _buyer, _itemId, _quantity, _paymentAmount, _paymentToken), 'You are not buyer');
+
         if (executeOrder(_buyer, _itemId, _quantity, _paymentToken, _paymentAmount)) {
-            emit AcceptSale(_buyer, _itemId, _quantity, _paymentToken, _paymentAmount);
+            emit AcceptSale(_buyer, _itemId, _quantity, _paymentToken, _paymentAmount, 1);
             return true;
         }
+
+        emit AcceptSale(_buyer, _itemId, _quantity, _paymentToken, _paymentAmount, 0);
         return false;
     }
 
@@ -514,8 +521,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
         Item storage item = items[_itemId];
         require(item.owner == msg.sender, 'Not the owner of this item');
 
-        IERC1155(item.tokenAddress).safeTransferFrom(address(this), msg.sender,  item.tokenId, item.quantity,
-            abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+        _1155SafeTransferFrom(item.tokenAddress, address(this), msg.sender, item.tokenId, item.quantity);
 
         item.status = 3;
         item.quantity = 0;
@@ -538,7 +544,7 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
 
     function adminCancelList(uint256 _itemId, address _receiver) external onlyOwner {
         Item storage item = items[_itemId];
-        IERC1155(item.tokenAddress).safeTransferFrom(address(this), _receiver,  item.tokenId, item.quantity, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+        _1155SafeTransferFrom(item.tokenAddress, address(this), _receiver, item.tokenId, item.quantity);
         item.status = 3;
         item.quantity = 0;
         item.price = 0;
@@ -551,18 +557,8 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
             numberItems = _itemId;
             if (_quantity > 0) {
                 IMarket(oldMarket).adminCancelList(_itemId, address(this));
-                Item memory newOrder;
-                newOrder.tokenId = _tokenId;
-                newOrder.owner = _owner;
-                newOrder.tokenAddress = _tokenAddress;
-                newOrder.quantity = _quantity;
-                newOrder.expired = _expired;
-                newOrder.status = _status;
-                newOrder.price = _price;
-                newOrder.minBid = _minBid;
-                newOrder.mask = _mask;
-                newOrder.paymentToken = _paymentToken;
-                items[_itemId] = newOrder;
+                Item memory data = Item(_owner, _tokenAddress, _paymentToken, _tokenId, _quantity, _expired, _status, _minBid, _price, _mask);
+                _createItem(_itemId, data);
             }
         }
     }
@@ -581,8 +577,15 @@ contract HodooiMarket is Ownable, Pausable, ERC1155Holder, VerifySign, Reentranc
         return lastSalePrice[_tokenAddress][_tokenId];
     }
 
-    function _verifyBuyer(bytes memory _buyerSignature, address _buyer, uint256 _orderId, uint256 _quantity, uint256 _price, address _paymentToken)
-    private view returns (bool) {
-        return (verify(_buyerSignature, _buyer, _orderId, _quantity, _price, _paymentToken));
+    function _createItem(uint256 _itemId, Item memory data)
+    private returns(bool){
+        items[_itemId] = data;
+        return true;
+    }
+
+    function _1155SafeTransferFrom(address _token, address _from, address _to, uint256 _id, uint256 _amount)
+    private returns(bool){
+        IERC1155(_token).safeTransferFrom(_from, _to, _id, _amount, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+        return true;
     }
 }
