@@ -6,6 +6,6 @@ module.exports = function(deployer) {
   deployer.then(() => {
     return hodooiMarket.at(scMarketAddress);
   }).then((instance) => {
-    return instance.setSotaExchangeContract(scExchangeAddress);
+    return instance.setExchangeContract(scExchangeAddress);
   });
 };

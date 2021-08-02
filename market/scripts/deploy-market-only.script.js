@@ -4,12 +4,14 @@ async function main() {
   // const exchange = "0x88e4C6808669ae32e8E0E242230F7212DfaBAE60";
   // const referral = "0x89EBf09B55CD85119C48254eE04B522d6e7fd72d";
   // const usdt = "0x14ec6EE23dD1589ea147deB6c41d5Ae3d6544893";
-  const exchange = "0xbe3050809Aff0667836944233BAEAB7977aC39eD";
-  const referral = "0xa9fE22967de8B476725296cB2690C07c665cF787";
-  const usdt = "0x14ec6EE23dD1589ea147deB6c41d5Ae3d6544893";
+  const exchange = "0x0000000000000000000000000000000000000000";
+  const referral = "0x0000000000000000000000000000000000000000";
+  const usdt = "0x0000000000000000000000000000000000000000";
+  const oldMarket = "0x0000000000000000000000000000000000000000";
+  const limitAuction = 1;
   /// DEPLOY MARKET
   const HodooiMarket = await hre.ethers.getContractFactory("HodooiMarket");
-  const hodooiMarket = await HodooiMarket.deploy();
+  const hodooiMarket = await HodooiMarket.deploy(oldMarket, limitAuction);
 
   await hodooiMarket.deployed();
 
@@ -21,14 +23,14 @@ async function main() {
   const artistLoyaltyFee = 5000;
   const referralFee = 5000;
 
-  await hodooiMarket.setSotaExchangeContract(exchange);
+  await hodooiMarket.setExchangeContract(exchange);
   await hodooiMarket.setReferralContract(referral);
   await hodooiMarket.setSystemFee(marketFee,  firstSellFee,  artistLoyaltyFee,  referralFee);
   await hodooiMarket.setWhiteListPayableToken(usdt, 1);
 
   await hre.run("verify:verify", {
     address: hodooiMarket.address,
-    constructorArguments: [],
+    constructorArguments: [oldMarket, limitAuction],
   })
 }
 

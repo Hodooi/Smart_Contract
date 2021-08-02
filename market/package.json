@@ -20,7 +20,7 @@
     "Decentralized",
     "Finance"
   ],
-  "author": "Sota-team",
+  "author": "Hodooi-team",
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@nomiclabs/hardhat-etherscan": "^2.1.2",
-    "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/contracts": "^3.4.1",
     "@truffle/hdwallet-provider": "^1.4.0",
     "babel-core": "6.26.3",
     "babel-loader": "7.1.4",
@@ -48,7 +48,9 @@
     "babel-register": "6.26.0",
     "dotenv": "8.2.0",
     "hardhat-abi-exporter": "^2.2.1",
+    "hardhat-contract-sizer": "^2.0.3",
     "mocha": "5.1.1",
+    "openzeppelin-solidity": "^3.4.0",
     "solidity-coverage": "0.5.11",
     "truffle": "5.1.31",
     "truffle-privatekey-provider": "1.3.0",

@@ -1,4 +1,4 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional 
+// We require the Hardhat Runtime Environment explicitly here. This is optional
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
@@ -9,7 +9,7 @@ async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
-  // If this script is run directly using `node` you may want to call compile 
+  // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
@@ -51,7 +51,7 @@ async function main() {
   const artistLoyaltyFee = 5000;
   const referralFee = 5000;
 
-  await hodooiMarket.setSotaExchangeContract(hodooiExchange.address);
+  await hodooiMarket.setExchangeContract(hodooiExchange.address);
   await hodooiMarket.setReferralContract(hodooiReferral.address);
   await hodooiMarket.setSystemFee(marketFee,  firstSellFee,  artistLoyaltyFee,  referralFee);
   await hodooiMarket.setWhiteListPayableToken(usdt, 1);
