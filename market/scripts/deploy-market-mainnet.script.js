@@ -1,4 +1,4 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
+// We require the Hardhat Runtime Environment explicitly here. This is optional 
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
@@ -9,18 +9,18 @@ async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
-  // If this script is run directly using `node` you may want to call compile
+  // If this script is run directly using `node` you may want to call compile 
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
   // We get the contract to deploy
   const [admin] = await hre.ethers.getSigners();
   // DEPLOY HODOOI EXCHANGE
-  const bnbRouter = '0x0000000000000000000000000000000000000000';
+  const bnbRouter = '0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F';
   // const usdt = '0x584119951fA66bf223312A29FB6EDEBdd957C5d8';
-  const usdt = '0x14ec6EE23dD1589ea147deB6c41d5Ae3d6544893';
-  const busd = '0x1a0B0c776950e31b05FB25e3d7E14f99592bFB71';
-  const bnb = '0xD5513cbe97986e7D366B8979D887CB76e441b148';
+  const usdt = '0x55d398326f99059fF775485246999027B3197955';
+  const busd = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
+  const bnb = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 
   const HodooiExchange = await hre.ethers.getContractFactory("HodooiExchange");
   const hodooiExchange = await HodooiExchange.deploy(bnbRouter, usdt, busd, bnb);
@@ -51,7 +51,7 @@ async function main() {
   const artistLoyaltyFee = 5000;
   const referralFee = 5000;
 
-  await hodooiMarket.setExchangeContract(hodooiExchange.address);
+  await hodooiMarket.setSotaExchangeContract(hodooiExchange.address);
   await hodooiMarket.setReferralContract(hodooiReferral.address);
   await hodooiMarket.setSystemFee(marketFee,  firstSellFee,  artistLoyaltyFee,  referralFee);
   await hodooiMarket.setWhiteListPayableToken(usdt, 1);
