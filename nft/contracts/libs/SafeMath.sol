@@ -1,7 +1,7 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 library SafeMath {
 
-  /**
+  /*
    * @dev Multiplies two unsigned integers, reverts on overflow.
    */
   function mul(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -18,7 +18,7 @@ library SafeMath {
     return c;
   }
 
-  /**
+  /*
    * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
    */
   function div(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -30,7 +30,7 @@ library SafeMath {
     return c;
   }
 
-  /**
+  /*
    * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
    */
   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -40,7 +40,7 @@ library SafeMath {
     return c;
   }
 
-  /**
+  /*
    * @dev Adds two unsigned integers, reverts on overflow.
    */
   function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -50,7 +50,7 @@ library SafeMath {
     return c; 
   }
 
-  /**
+  /*
    * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
    * reverts when dividing by zero.
    */

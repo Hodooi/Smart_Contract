@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 import "../interfaces/IERC165.sol";
 import "../libs/SafeMath.sol";
@@ -9,7 +9,7 @@ contract ERC1155 is IERC165 {
     using SafeMath for uint256;
     using Address for address;
 
-    /***********************************|
+    /**********************************|
   |        Variables and Events       |
   |__________________________________*/
 
@@ -44,11 +44,11 @@ contract ERC1155 is IERC165 {
         bool _approved
     );
 
-    /***********************************|
+    /**********************************|
   |     Public Transfer Functions     |
   |__________________________________*/
 
-    /**
+    /*
      * @notice Transfers amount amount of an _id from the _from address to the _to address specified
      * @param _from    Source address
      * @param _to      Target address
@@ -77,7 +77,7 @@ contract ERC1155 is IERC165 {
         _callonERC1155Received(_from, _to, _id, _amount, _data);
     }
 
-    /**
+    /*
      * @notice Send multiple types of Tokens from the _from address to the _to address (with safety call)
      * @param _from     Source addresses
      * @param _to       Target addresses
@@ -106,11 +106,11 @@ contract ERC1155 is IERC165 {
         _callonERC1155BatchReceived(_from, _to, _ids, _amounts, _data);
     }
 
-    /***********************************|
+    /**********************************|
   |    Internal Transfer Functions    |
   |__________________________________*/
 
-    /**
+    /*
      * @notice Transfers amount amount of an _id from the _from address to the _to address specified
      * @param _from    Source address
      * @param _to      Target address
@@ -131,7 +131,7 @@ contract ERC1155 is IERC165 {
         emit TransferSingle(msg.sender, _from, _to, _id, _amount);
     }
 
-    /**
+    /*
      * @notice Verifies if receiver is contract and if so, calls (_to).onERC1155Received(...)
      */
     function _callonERC1155Received(
@@ -158,7 +158,7 @@ contract ERC1155 is IERC165 {
         }
     }
 
-    /**
+    /*
      * @notice Send multiple types of Tokens from the _from address to the _to address (with safety call)
      * @param _from     Source addresses
      * @param _to       Target addresses
@@ -192,7 +192,7 @@ contract ERC1155 is IERC165 {
         emit TransferBatch(msg.sender, _from, _to, _ids, _amounts);
     }
 
-    /**
+    /*
      * @notice Verifies if receiver is contract and if so, calls (_to).onERC1155BatchReceived(...)
      */
     function _callonERC1155BatchReceived(
@@ -219,11 +219,11 @@ contract ERC1155 is IERC165 {
         }
     }
 
-    /***********************************|
+    /**********************************|
   |         Operator Functions        |
   |__________________________________*/
 
-    /**
+    /*
      * @notice Enable or disable approval for a third party ("operator") to manage all of caller's tokens
      * @param _operator  Address to add to the set of authorized operators
      * @param _approved  True if the operator is approved, false to revoke approval
@@ -234,7 +234,7 @@ contract ERC1155 is IERC165 {
         emit ApprovalForAll(msg.sender, _operator, _approved);
     }
 
-    /**
+    /*
      * @notice Queries the approval status of an operator for a given owner
      * @param _owner     The owner of the Tokens
      * @param _operator  Address of authorized operator
@@ -243,16 +243,17 @@ contract ERC1155 is IERC165 {
     function isApprovedForAll(address _owner, address _operator)
     public
     view
+    virtual
     returns (bool isOperator)
     {
         return operators[_owner][_operator];
     }
 
-    /***********************************|
+    /**********************************|
   |         Balance Functions         |
   |__________________________________*/
 
-    /**
+    /*
      * @notice Get the balance of an account's Tokens
      * @param _owner  The address of the token holder
      * @param _id     ID of the Token
@@ -266,7 +267,7 @@ contract ERC1155 is IERC165 {
         return balances[_owner][_id];
     }
 
-    /**
+    /*
      * @notice Get the balance of multiple account/token pairs
      * @param _owners The addresses of the token holders
      * @param _ids    ID of the Tokens
@@ -293,16 +294,16 @@ contract ERC1155 is IERC165 {
         return batchBalances;
     }
 
-    /***********************************|
+    /**********************************|
   |          ERC165 Functions         |
   |__________________________________*/
 
-    /**
+    /*
      * INTERFACE_SIGNATURE_ERC165 = bytes4(keccak256("supportsInterface(bytes4)"));
      */
     bytes4 private constant INTERFACE_SIGNATURE_ERC165 = 0x01ffc9a7;
 
-    /**
+    /*
      * INTERFACE_SIGNATURE_ERC1155 =
      * bytes4(keccak256("safeTransferFrom(address,address,uint256,uint256,bytes)")) ^
      * bytes4(keccak256("safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)")) ^
@@ -313,7 +314,7 @@ contract ERC1155 is IERC165 {
      */
     bytes4 private constant INTERFACE_SIGNATURE_ERC1155 = 0xd9b67a26;
 
-    /**
+    /*
      * @notice Query if a contract implements an interface
      * @param _interfaceID  The interface identifier, as specified in ERC-165
      * @return `true` if the contract implements `_interfaceID` and
@@ -321,6 +322,7 @@ contract ERC1155 is IERC165 {
     function supportsInterface(bytes4 _interfaceID)
     external
     view
+    override
     returns (bool)
     {
         if (

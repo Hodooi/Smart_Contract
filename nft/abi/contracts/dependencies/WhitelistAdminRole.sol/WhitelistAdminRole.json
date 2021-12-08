@@ -1,7 +1,6 @@
 [
   {
     "inputs": [],
-    "payable": false,
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -32,7 +31,6 @@
     "type": "event"
   },
   {
-    "constant": false,
     "inputs": [
       {
         "internalType": "address",
@@ -42,12 +40,10 @@
     ],
     "name": "addWhitelistAdmin",
     "outputs": [],
-    "payable": false,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
     "inputs": [
       {
         "internalType": "address",
@@ -63,16 +59,13 @@
         "type": "bool"
       }
     ],
-    "payable": false,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
     "inputs": [],
     "name": "renounceWhitelistAdmin",
     "outputs": [],
-    "payable": false,
     "stateMutability": "nonpayable",
     "type": "function"
   }

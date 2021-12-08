@@ -1,13 +1,16 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 import "./ERC1155.sol";
 
 contract ERC1155MintBurn is ERC1155 {
-    /****************************************|
+
+    using SafeMath for uint256;
+
+    /***************************************|
   |            Minting Functions           |
   |_______________________________________*/
 
-    /**
+    /*
      * @notice Mint _amount of tokens of a given id
      * @param _to      The address to mint tokens to
      * @param _id      Token id to mint
@@ -30,7 +33,7 @@ contract ERC1155MintBurn is ERC1155 {
         _callonERC1155Received(address(0x0), _to, _id, _amount, _data);
     }
 
-    /**
+    /*
      * @notice Mint tokens for each ids in _ids
      * @param _to       The address to mint tokens to
      * @param _ids      Array of ids to mint
@@ -64,11 +67,11 @@ contract ERC1155MintBurn is ERC1155 {
         _callonERC1155BatchReceived(address(0x0), _to, _ids, _amounts, _data);
     }
 
-    /****************************************|
+    /***************************************|
   |            Burning Functions           |
   |_______________________________________*/
 
-    /**
+    /*
      * @notice Burn _amount of tokens of a given token id
      * @param _from    The address to burn tokens from
      * @param _id      Token id to burn
@@ -86,7 +89,7 @@ contract ERC1155MintBurn is ERC1155 {
         emit TransferSingle(msg.sender, _from, address(0x0), _id, _amount);
     }
 
-    /**
+    /*
      * @notice Burn tokens of given token id for each (_ids[i], _amounts[i]) pair
      * @param _from     The address to burn tokens from
      * @param _ids      Array of token ids to burn
