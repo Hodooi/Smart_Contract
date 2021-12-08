@@ -19,7 +19,7 @@ async function main() {
 
   // CONFIGURE MARKET
   const marketFee = 250;
-  const firstSellFee = 1500;
+  const firstSellFee = 250;
   const artistLoyaltyFee = 5000;
   const referralFee = 5000;
 
