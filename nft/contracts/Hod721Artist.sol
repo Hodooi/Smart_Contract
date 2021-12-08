@@ -5,18 +5,18 @@ import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
-contract Hod721General is ERC721, Ownable {
+contract Hod721Artist is ERC721, Ownable {
 	using SafeMath for uint256;
 
 	uint256 public _currentTokenId = 0;
 	mapping(uint256 => address) public creators;
 	mapping(uint256 => uint256) public loyaltyFee;
 
-	constructor() public ERC721('Hodooi Platform ERC721 NFTs', 'HOD721') {
+	constructor(string memory name, string memory symbol) public ERC721(name, symbol) {
 		_setBaseURI('https://api.hodooi.com/');
 	}
 
-	/**
+	/*
 	 * @dev Create new NFT
 	 * @param _tokenURI _tokenURI of tokenID
 	 */
@@ -30,7 +30,7 @@ contract Hod721General is ERC721, Ownable {
 		_incrementTokenId();
 	}
 
-	/**
+	/*
 	 * @dev calculates the next token ID based on value of _currentTokenId
 	 * @return uint256 for the next token ID
 	 */
@@ -38,7 +38,7 @@ contract Hod721General is ERC721, Ownable {
 		return _currentTokenId.add(1);
 	}
 
-	/**
+	/*
 	 * @dev increments the value of _currentTokenId
 	 */
 	function _incrementTokenId() private {

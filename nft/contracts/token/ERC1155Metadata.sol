@@ -1,10 +1,10 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 contract ERC1155Metadata {
     // URI's default URI prefix
     string internal baseMetadataURI;
 
-    /**
+    /*
      * @notice Will update the base URL of token's URI
      * @param _newBaseMetadataURI New base URL of token's URI
      */
@@ -12,11 +12,11 @@ contract ERC1155Metadata {
         baseMetadataURI = _newBaseMetadataURI;
     }
 
-    /***********************************|
+    /**********************************|
   |    Utility Internal Functions     |
   |__________________________________*/
 
-    /**
+    /*
      * @notice Convert uint256 to string
      * @param _i Unsigned integer to convert to string
      */

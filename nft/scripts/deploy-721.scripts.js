@@ -1,7 +1,7 @@
 const hre = require("hardhat")
 
 const main = async () => {
-	const HodooiFactory = await hre.ethers.getContractFactory("Hod721Artist")
+	const HodooiFactory = await hre.ethers.getContractFactory("Hod721General")
 	  const hodooi = await HodooiFactory.deploy()
 	  await hodooi.deployed()
 
@@ -10,7 +10,7 @@ const main = async () => {
 	  await hre.run("verify:verify", {
 	    address: hodooi.address,
 	    constructorArguments: [],
-	    contract: "contracts/Hod721Artist.sol:Hod721Artist"
+	    contract: "contracts/Hod721General.sol:Hod721General"
 	  })
 }
 
