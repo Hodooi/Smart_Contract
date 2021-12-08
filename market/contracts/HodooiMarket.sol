@@ -350,10 +350,10 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, ERC721Holder, VerifySign,
 
         require(item.owner != address(0), 'Item not exist');
         require(item.status == 1, 'Item unavailable');
-        require(item.quantity >= _quantity, 'Quantity invalid');
-        require(item.owner != msg.sender, 'Owner cannot bid');
-        require(item.mask == 2, 'Not for bid');
-        require(item.expired >= block.timestamp, 'Item expired');
+        // require(item.quantity >= _quantity, 'Quantity invalid');
+        // require(item.owner != msg.sender, 'Owner cannot bid');
+        // require(item.mask == 2, 'Not for bid');
+        // require(item.expired >= block.timestamp, 'Item expired');
 
         if(_bidToken != address(0)){
             require(whitelistPayableToken[_bidToken] == 1, 'Payment token not support');
