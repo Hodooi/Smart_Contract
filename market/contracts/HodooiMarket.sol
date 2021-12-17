@@ -7,23 +7,28 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 
 import "./interfaces/IERC1155.sol";
+import "./interfaces/IERC721.sol";
 import "./interfaces/IBSCswapRouter.sol";
 import "./interfaces/IReferral.sol";
 import "./interfaces/IExchange.sol";
 import "./interfaces/IMarket.sol";
+import "./interfaces/IHODNFT.sol";
 
 import "./token/ERC1155Holder.sol";
 import "./dependencies/VerifySign.sol";
 import "./HodooiManager.sol";
 
-contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGuard {
+contract HodooiMarket is HodooiManager, ERC1155Holder, ERC721Holder, VerifySign, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     uint256 public constant ZOOM_USDT = 10 ** 6;
     uint256 public constant ZOOM_FEE = 10 ** 4;
+    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+    bytes4 private constant _INTERFACE_ID_ERC1155 = 0xd9b67a26;
 
     struct Item {
         address owner;
@@ -75,7 +80,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
     event AdminMigrateData(uint256 _itemId, address _owner, address _toContract);
     event PayBack(address _account, uint256 _repay);
 
-    constructor(address _oldMarket, uint256 _limit) public {
+    constructor(address _oldMarket, uint256 _limit) {
         oldMarket = _oldMarket;
         limitAuction = _limit;
     }
@@ -85,7 +90,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
     // Fallback function is called when msg.data is not empty
     fallback() external payable {}
 
-    function _getReferralAddress(address _user) private returns(address payable) {
+    function _getReferralAddress(address _user) private view returns(address payable) {
         return payable(IReferral(referralContract).getReferral(_user));
     }
 
@@ -95,30 +100,35 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
         return true;
     }
 
-    function _1155SafeTransferFrom(address _token, address _from, address _to, uint256 _id, uint256 _amount)
-    private returns(bool){
-        IERC1155(_token).safeTransferFrom(_from, _to, _id, _amount, abi.encodePacked(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")));
+    function _nftSafeTransferFrom(address _token, address _from, address _to, uint256 _id, uint256 _amount) private returns(bool) {
+        bool isERC721 = IERC721(_token).supportsInterface(_INTERFACE_ID_ERC721);
+        if(isERC721) {
+            IERC721(_token).safeTransferFrom(_from, _to, _id);
+        } else{
+            IERC1155(_token).safeTransferFrom(_from, _to, _id, _amount, '0x');
+        }
         return true;
     }
 
     Fee fee;
     ReferralAddress ref;
 
-    function _estimateUSDT(address _paymentToken, uint256 _paymentAmount) private returns (uint256) {
+    function _estimateUSDT(address _paymentToken, uint256 _paymentAmount) private view returns (uint256) {
         return IExchange(exchangeContract).estimateToUSDT(_paymentToken, _paymentAmount);
     }
 
-    function _estimateToken(address _paymentToken, uint256 _usdtAmount) private returns (uint256) {
+    function _estimateToken(address _paymentToken, uint256 _usdtAmount) private view returns (uint256) {
         return IExchange(exchangeContract).estimateFromUSDT(_paymentToken, _usdtAmount);
     }
 
     function _executeOrder(address _buyer, uint256 _itemId, uint256 _quantity, address _paymentToken, uint256 _paymentAmount)
     private returns(bool) {
         Item storage item = items[_itemId];
-        address payable creator = payable(IERC1155(item.tokenAddress).getCreator(item.tokenId));
-        uint256 loyalty = IERC1155(item.tokenAddress).getLoyaltyFee(item.tokenId);
-
+        address payable creator = payable(IHODNFT(item.tokenAddress).getCreator(item.tokenId));
+        uint256 loyalty = IHODNFT(item.tokenAddress).getLoyaltyFee(item.tokenId);
         uint256 itemPrice = _estimateToken(_paymentToken, item.price.div(item.quantity).mul(_quantity));
+        uint256 itemPriceWithFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+
         uint256 priceInUsdt = item.price.div(item.quantity).mul(_quantity);
 
         if(_paymentToken == address(0)){
@@ -127,10 +137,11 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
 
         // for sale
         if(item.mask == 1){
-            require (_paymentAmount >= itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE), 'Invalid price');
+            uint256 priceWithFeeForSale = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE); // down size of smartcontract
+            require (_paymentAmount >= priceWithFeeForSale, 'Invalid price');
             if(_paymentToken == address(0)){
                 // excess cash (BNB)
-                uint256 _repay = _paymentAmount.sub(itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE));
+                uint256 _repay = _paymentAmount.sub(priceWithFeeForSale);
                 if(_repay > 0){
                     address payable _payee = payable(_buyer);
                     _payee.transfer(_repay);
@@ -138,7 +149,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                 }
             }else{
                 // erc20
-                _paymentAmount = itemPrice.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
+                _paymentAmount = priceWithFeeForSale;
             }
         }else{
             // for acceptSale
@@ -158,7 +169,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                         * artist receive itemPrice * (100 - artistLoyaltyFee)
                         * referral of buyer receive (marketFee * itemPrice / 100) * (referralFee / 100)
                     */
-                    fee.itemFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+                    fee.itemFee = itemPriceWithFee;
                     ERC20(_paymentToken).safeTransferFrom(_buyer, address(this), _paymentAmount);
                     IERC20(_paymentToken).transfer(creator, itemPrice.mul(artistLoyaltyFee).div(ZOOM_FEE));
                     IERC20(_paymentToken).transfer(item.owner, itemPrice.mul(ZOOM_FEE - artistLoyaltyFee).div(ZOOM_FEE));
@@ -172,7 +183,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                        * referral of seller receive itemPrice * firstSellFee / 100 * (referralFee / 100)
                        * referral of buyer receive itemPrice * marketFee / 100 * (referralFee / 100)
                    */
-                    fee.buyerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+                    fee.buyerFee = itemPriceWithFee;
                     fee.sellerFee = itemPrice.mul(firstSellFee).div(ZOOM_FEE);
                     ERC20(_paymentToken).safeTransferFrom(_buyer, address(this), _paymentAmount);
                     IERC20(_paymentToken).transfer(item.owner, itemPrice.mul(ZOOM_FEE - firstSellFee).div(ZOOM_FEE));
@@ -191,7 +202,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                         * artist receive itemPrice * (100 - artistLoyaltyFee)
                         * referral of buyer receive (marketFee * itemPrice / 100) * (referralFee / 100)
                     */
-                    fee.itemFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+                    fee.itemFee = itemPriceWithFee;
                     creator.transfer(itemPrice.mul(artistLoyaltyFee).div(ZOOM_FEE));
                     payable(item.owner).transfer(itemPrice.mul(ZOOM_FEE - artistLoyaltyFee).div(ZOOM_FEE));
                     if (ref.buyerRef != address(0)) {
@@ -204,7 +215,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                        * referral of seller receive itemPrice * firstSellFee / 100 * (referralFee / 100)
                        * referral of buyer receive itemPrice * marketFee / 100 * (referralFee / 100)
                    */
-                    fee.buyerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+                    fee.buyerFee = itemPriceWithFee;
                     fee.sellerFee = itemPrice.mul(firstSellFee).div(ZOOM_FEE);
                     payable(item.owner).transfer(itemPrice.mul(ZOOM_FEE - firstSellFee).div(ZOOM_FEE));
                     if (ref.buyerRef != address(0)) {
@@ -216,8 +227,9 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                 }
             }
         } else {
+            uint256 itemPriceZoomFeeMinusMarketFee = itemPrice.mul(ZOOM_FEE - marketFee).div(ZOOM_FEE);
             if (lastSalePrice[item.tokenAddress][item.tokenId] < priceInUsdt) {
-                uint256 revenue = (priceInUsdt - lastSalePrice[item.tokenAddress][item.tokenId]).mul(ZOOM_FEE).div(priceInUsdt);
+                uint256 revenue = ((priceInUsdt - lastSalePrice[item.tokenAddress][item.tokenId]).mul(ZOOM_FEE)).div(priceInUsdt);
                 /**
                        * buyer pay itemPrice + marketFee
                        * seller receive itemPrice - itemPrice * marketFee / 100 - revenue * lastSalePrice[tokenAddress][tokenId] * item.loyalty
@@ -227,9 +239,9 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                    */
                 if (msg.value > 0) {
                     fee.loyaltyFee = itemPrice.mul(revenue).div(ZOOM_FEE).mul(loyalty).div(ZOOM_FEE);
-                    fee.buyerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
-                    fee.sellerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
-                    payable(item.owner).transfer(itemPrice.mul(ZOOM_FEE - marketFee).div(ZOOM_FEE).sub(fee.loyaltyFee));
+                    fee.buyerFee = itemPriceWithFee;
+                    fee.sellerFee = itemPriceWithFee;
+                    payable(item.owner).transfer(itemPriceZoomFeeMinusMarketFee.sub(fee.loyaltyFee));
                     creator.transfer(fee.loyaltyFee);
                     if (ref.buyerRef != address(0)) {
                         ref.buyerRef.transfer(fee.buyerFee.mul(referralFee).div(ZOOM_FEE));
@@ -238,12 +250,14 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                         ref.sellerRef.transfer(fee.sellerFee.mul(referralFee).div(ZOOM_FEE));
                     }
                 } else {
-                    fee.loyaltyFee = itemPrice.mul(revenue).div(ZOOM_FEE).mul(loyalty).div(ZOOM_FEE);
-                    fee.buyerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
-                    fee.sellerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+                    
+                    fee.loyaltyFee = itemPrice.mul(revenue).div(ZOOM_FEE).div(ZOOM_FEE).mul(loyalty);
+                    fee.buyerFee = itemPriceWithFee;
+                    fee.sellerFee = itemPriceWithFee;
                     ERC20(_paymentToken).safeTransferFrom(_buyer, address(this), _paymentAmount);
                     IERC20(_paymentToken).transfer(item.owner, itemPrice.mul(ZOOM_FEE - marketFee).div(ZOOM_FEE).sub(fee.loyaltyFee));
                     IERC20(_paymentToken).transfer(creator, fee.loyaltyFee);
+                    
                     if (ref.buyerRef != address(0)) {
                         IERC20(_paymentToken).transfer(ref.buyerRef, fee.buyerFee.mul(referralFee).div(ZOOM_FEE));
                     }
@@ -253,11 +267,12 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
 
                 }
             } else {
-                fee.buyerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
-                fee.sellerFee = itemPrice.mul(marketFee).div(ZOOM_FEE);
+                fee.buyerFee = itemPriceWithFee;
+                fee.sellerFee = itemPriceWithFee;
                 if (msg.value == 0) {
+                    
                     ERC20(_paymentToken).safeTransferFrom(_buyer, address(this), _paymentAmount);
-                    IERC20(_paymentToken).transfer(item.owner, itemPrice.mul(ZOOM_FEE - marketFee).div(ZOOM_FEE));
+                    IERC20(_paymentToken).transfer(item.owner, itemPriceZoomFeeMinusMarketFee);
                     if (ref.buyerRef != address(0)) {
                         IERC20(_paymentToken).transfer(ref.buyerRef, fee.buyerFee.mul(referralFee).div(ZOOM_FEE));
                     }
@@ -265,7 +280,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                         IERC20(_paymentToken).transfer(ref.sellerRef, fee.sellerFee.mul(referralFee).div(ZOOM_FEE));
                     }
                 } else {
-                    payable(item.owner).transfer(itemPrice.mul(ZOOM_FEE - marketFee).div(ZOOM_FEE));
+                    payable(item.owner).transfer(itemPriceZoomFeeMinusMarketFee);
                     if (ref.buyerRef != address(0)) {
                         ref.buyerRef.transfer(fee.buyerFee.mul(referralFee).div(ZOOM_FEE));
                     }
@@ -275,7 +290,8 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
                 }
             }
         }
-        _1155SafeTransferFrom(item.tokenAddress, address(this), _buyer, item.tokenId, _quantity);
+
+        _nftSafeTransferFrom(item.tokenAddress, address(this), _buyer, item.tokenId, _quantity);
         lastSalePrice[item.tokenAddress][item.tokenId] = priceInUsdt.mul(ZOOM_FEE + marketFee).div(ZOOM_FEE);
 
         // for sale
@@ -293,8 +309,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
 
     function list(address _tokenAddress, uint256 _tokenId, uint256 _quantity, uint256 _mask, uint256 _price, address _paymentToken, uint256 _expiration)
     public whenNotPaused nonReentrant returns (uint256 _idx) {
-        uint balance = IERC1155(_tokenAddress).balanceOf(msg.sender, _tokenId);
-        require(balance >= _quantity, 'Not enough token for sale');
+        require(_quantity > 0, 'Invalid-quantity');
         if(_paymentToken != address(0)){
             require(whitelistPayableToken[_paymentToken] == 1, 'Payment token not support');
         }
@@ -302,8 +317,17 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
             require(_quantity <= limitAuction, 'Quantity exceeded limit');
         }
 
-        _1155SafeTransferFrom(_tokenAddress, msg.sender, address(this), _tokenId, _quantity);
+        bool isERC721 = IERC721(_tokenAddress).supportsInterface(_INTERFACE_ID_ERC721);
+        uint256 balance;
 
+        if(isERC721) {
+            balance = (IERC721(_tokenAddress).ownerOf(_tokenId) == msg.sender) ? 1 : 0;
+        } else{
+            balance = IERC1155(_tokenAddress).balanceOf(msg.sender, _tokenId);
+        }
+
+        require(balance >= _quantity, 'Insufficient-token-balance');
+        _nftSafeTransferFrom(_tokenAddress, msg.sender, address(this), _tokenId, _quantity);
         _idx = numberItems;
         uint256 _minBid = 0;
         if (_mask == 2) {
@@ -320,16 +344,16 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
     function bid(uint256 _itemId, uint256 _quantity, address _bidToken, uint256 _bidAmount, uint256 _expiration)
     public whenNotPaused nonReentrant returns (uint256 _idx){
         require(biddingStatus,'Bidding is disabled');
-
+ 
         _idx = numberBidOrders;
         Item memory item = items[_itemId];
 
         require(item.owner != address(0), 'Item not exist');
         require(item.status == 1, 'Item unavailable');
-        require(item.quantity >= _quantity, 'Quantity invalid');
-        require(item.owner != msg.sender, 'Owner cannot bid');
-        require(item.mask == 2, 'Not for bid');
-        require(item.expired >= block.timestamp, 'Item expired');
+        // require(item.quantity >= _quantity, 'Quantity invalid');
+        // require(item.owner != msg.sender, 'Owner cannot bid');
+        // require(item.mask == 2, 'Not for bid');
+        // require(item.expired >= block.timestamp, 'Item expired');
 
         if(_bidToken != address(0)){
             require(whitelistPayableToken[_bidToken] == 1, 'Payment token not support');
@@ -458,7 +482,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
         Item storage item = items[_itemId];
         require(item.owner == msg.sender, 'Not the owner of this item');
 
-        _1155SafeTransferFrom(item.tokenAddress, address(this), msg.sender, item.tokenId, item.quantity);
+        _nftSafeTransferFrom(item.tokenAddress, address(this), msg.sender, item.tokenId, item.quantity);
 
         item.status = 3;
         item.quantity = 0;
@@ -481,14 +505,14 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
 
     function adminCancelList(uint256 _itemId, address _receiver) external onlyOwner {
         Item storage item = items[_itemId];
-        _1155SafeTransferFrom(item.tokenAddress, address(this), _receiver, item.tokenId, item.quantity);
+        _nftSafeTransferFrom(item.tokenAddress, address(this), _receiver, item.tokenId, item.quantity);
         item.status = 3;
         item.quantity = 0;
         item.price = 0;
         emit CancelListed(_itemId, _receiver);
     }
 
-    function adminMigrateData(uint256 _fromOrderId, uint256 _toOrderId) external onlyOwner() {
+    function adminMigrateData(uint256 _fromOrderId, uint256 _toOrderId) external onlyOwner {
         for (uint256 _itemId = _fromOrderId; _itemId <= _toOrderId; _itemId++) {
             ( address _owner, address _tokenAddress, address _paymentToken, uint256 _tokenId, uint256 _quantity, uint256 _expired, uint256 _status, uint256 _minBid, uint256 _price, uint256 _mask ) = IMarket(oldMarket).items(_itemId);
             numberItems = _itemId;
@@ -500,7 +524,7 @@ contract HodooiMarket is HodooiManager, ERC1155Holder, VerifySign, ReentrancyGua
         }
     }
 
-    function adminMigrateLastSale(address[] memory _tokenAddress, uint256[] memory _tokenId, uint256[] memory _price) external onlyOwner() {
+    function adminMigrateLastSale(address[] memory _tokenAddress, uint256[] memory _tokenId, uint256[] memory _price) external onlyOwner {
         for (uint i = 0; i < _tokenAddress.length; i++) {
             lastSalePrice[_tokenAddress[i]][_tokenId[i]] = _price[i];
         }

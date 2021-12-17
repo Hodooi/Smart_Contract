@@ -1,10 +1,10 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 library Roles {
     struct Role {
         mapping (address => bool) bearer;
     }
 
-    /**
+    /*
      * @dev Give an account access to this role.
      */
     function add(Role storage role, address account) internal {
@@ -12,7 +12,7 @@ library Roles {
         role.bearer[account] = true;
     }
 
-    /**
+    /*
      * @dev Remove an account's access to this role.
      */
     function remove(Role storage role, address account) internal {
@@ -20,7 +20,7 @@ library Roles {
         role.bearer[account] = false;
     }
 
-    /**
+    /*
      * @dev Check if an account has this role.
      * @return bool
      */

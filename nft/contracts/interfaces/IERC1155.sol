@@ -1,8 +1,8 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 interface IERC1155 {
   // Events
 
-  /**
+  /*
    * @dev Either TransferSingle or TransferBatch MUST emit when tokens are transferred, including zero amount transfers as well as minting or burning
    *   Operator MUST be msg.sender
    *   When minting/creating tokens, the `_from` field MUST be set to `0x0`
@@ -12,7 +12,7 @@ interface IERC1155 {
    */
   event TransferSingle(address indexed _operator, address indexed _from, address indexed _to, uint256 _id, uint256 _amount);
 
-  /**
+  /*
    * @dev Either TransferSingle or TransferBatch MUST emit when tokens are transferred, including zero amount transfers as well as minting or burning
    *   Operator MUST be msg.sender
    *   When minting/creating tokens, the `_from` field MUST be set to `0x0`
@@ -22,19 +22,19 @@ interface IERC1155 {
    */
   event TransferBatch(address indexed _operator, address indexed _from, address indexed _to, uint256[] _ids, uint256[] _amounts);
 
-  /**
+  /*
    * @dev MUST emit when an approval is updated
    */
   event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
 
-  /**
+  /*
    * @dev MUST emit when the URI is updated for a token ID
    *   URIs are defined in RFC 3986
    *   The URI MUST point a JSON file that conforms to the "ERC-1155 Metadata JSON Schema"
    */
   event URI(string _amount, uint256 indexed _id);
 
-  /**
+  /*
    * @notice Transfers amount of an _id from the _from address to the _to address specified
    * @dev MUST emit TransferSingle event on success
    * Caller must be approved to manage the _from account's tokens (see isApprovedForAll)
@@ -50,7 +50,7 @@ interface IERC1155 {
    */
   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes calldata _data) external;
 
-  /**
+  /*
    * @notice Send multiple types of Tokens from the _from address to the _to address (with safety call)
    * @dev MUST emit TransferBatch event on success
    * Caller must be approved to manage the _from account's tokens (see isApprovedForAll)
@@ -68,7 +68,7 @@ interface IERC1155 {
   */
   function safeBatchTransferFrom(address _from, address _to, uint256[] calldata _ids, uint256[] calldata _amounts, bytes calldata _data) external;
   
-  /**
+  /*
    * @notice Get the balance of an account's Tokens
    * @param _owner  The address of the token holder
    * @param _id     ID of the Token
@@ -76,7 +76,7 @@ interface IERC1155 {
    */
   function balanceOf(address _owner, uint256 _id) external view returns (uint256);
 
-  /**
+  /*
    * @notice Get the balance of multiple account/token pairs
    * @param _owners The addresses of the token holders
    * @param _ids    ID of the Tokens
@@ -84,7 +84,7 @@ interface IERC1155 {
    */
   function balanceOfBatch(address[] calldata _owners, uint256[] calldata _ids) external view returns (uint256[] memory);
 
-  /**
+  /*
    * @notice Enable or disable approval for a third party ("operator") to manage all of caller's tokens
    * @dev MUST emit the ApprovalForAll event on success
    * @param _operator  Address to add to the set of authorized operators
@@ -92,7 +92,7 @@ interface IERC1155 {
    */
   function setApprovalForAll(address _operator, bool _approved) external;
 
-  /**
+  /*
    * @notice Queries the approval status of an operator for a given owner
    * @param _owner     The owner of the Tokens
    * @param _operator  Address of authorized operator

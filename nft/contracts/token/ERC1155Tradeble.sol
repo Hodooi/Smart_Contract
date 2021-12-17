@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.5.0;
 
 import "../libs/Strings.sol";
 
@@ -19,6 +19,7 @@ Ownable,
 MinterRole,
 WhitelistAdminRole
 {
+    using SafeMath for uint256;
     using Strings for string;
 
     address proxyRegistryAddress;
@@ -59,7 +60,7 @@ WhitelistAdminRole
         return Strings.strConcat(baseMetadataURI, tokenURI[_id]);
     }
 
-    /**
+    /*
      * @dev Returns the total quantity for a token ID
      * @param _id uint256 ID of the token to query
      * @return amount of token in existence
@@ -68,7 +69,7 @@ WhitelistAdminRole
         return tokenSupply[_id];
     }
 
-    /**
+    /*
      * @dev Returns the max quantity for a token ID
      * @param _id uint256 ID of the token to query
      * @return amount of token in existence
@@ -77,7 +78,7 @@ WhitelistAdminRole
         return tokenMaxSupply[_id];
     }
 
-    /**
+    /*
      * @dev Will update the base URL of token's URI
      * @param _newBaseMetadataURI New base URL of token's URI
      */
@@ -88,7 +89,7 @@ WhitelistAdminRole
         _setBaseMetadataURI(_newBaseMetadataURI);
     }
 
-    /**
+    /*
      * @dev Creates a new token type and assigns _initialSupply to an address
      * @param _maxSupply max supply allowed
      * @param _initialSupply Optional amount to supply the first owner
@@ -121,7 +122,7 @@ WhitelistAdminRole
         return _id;
     }
 
-    /**
+    /*
      * @dev Mints some amount of tokens to an address
      * @param _to          Address of the future owner of the token
      * @param _id          Token ID to mint
@@ -144,7 +145,7 @@ WhitelistAdminRole
         tokenSupply[_id] = tokenSupply[_id].add(_quantity);
     }
 
-    /**
+    /*
      * Set proxyRegistryAddress
      */
     function setProxyAddress(address _proxyRegistryAddress)
@@ -156,12 +157,13 @@ WhitelistAdminRole
         return true;
     }
 
-    /**
+    /*
      * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-free listings.
      */
     function isApprovedForAll(address _owner, address _operator)
     public
     view
+    override
     returns (bool isOperator)
     {
         if (proxyRegistryAddress != address(0)) {
@@ -173,7 +175,7 @@ WhitelistAdminRole
         return ERC1155.isApprovedForAll(_owner, _operator);
     }
 
-    /**
+    /*
      * @dev Returns whether the specified token exists by checking to see if it has a creator
      * @param _id uint256 ID of the token to query the existence of
      * @return bool whether the token exists
@@ -182,7 +184,7 @@ WhitelistAdminRole
         return creators[_id] != address(0);
     }
 
-    /**
+    /*
      * @dev calculates the next token ID based on value of _currentTokenID
      * @return uint256 for the next token ID
      */
@@ -190,7 +192,7 @@ WhitelistAdminRole
         return _currentTokenID.add(1);
     }
 
-    /**
+    /*
      * @dev increments the value of _currentTokenID
      */
     function _incrementTokenTypeId() private {
