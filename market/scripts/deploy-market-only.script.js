@@ -1,14 +1,23 @@
 const hre = require("hardhat");
 
 async function main() {
-  // const exchange = "0x88e4C6808669ae32e8E0E242230F7212DfaBAE60";
-  // const referral = "0x89EBf09B55CD85119C48254eE04B522d6e7fd72d";
+  /**
+   * Testnet
+  */
+  // const exchange = "0xbe3050809Aff0667836944233BAEAB7977aC39eD";
+  // const referral = "0xa9fE22967de8B476725296cB2690C07c665cF787";
   // const usdt = "0x14ec6EE23dD1589ea147deB6c41d5Ae3d6544893";
-  const exchange = "0xbe3050809Aff0667836944233BAEAB7977aC39eD";
-  const referral = "0xa9fE22967de8B476725296cB2690C07c665cF787";
-  const usdt = "0x14ec6EE23dD1589ea147deB6c41d5Ae3d6544893";
-  const hod = "0xad956c3fff018726ed0ecd7531e45a71232f4fda"
-  const oldMarket = "0x2796F1901302E11205b7588fE77B0a24B9460Ad6";
+  // const hod = "0xad956c3fff018726ed0ecd7531e45a71232f4fda"
+  // const oldMarket = "0x2796F1901302E11205b7588fE77B0a24B9460Ad6";
+
+  /**
+   * Mainnet
+  */
+  const exchange = "0x2C20f6EEfd6B5941510224F8Ca5ad5a90Be8DFFf";
+  const referral = "0x25B7bB20667F3d55EB1707D54862210A7A0165eb";
+  const usdt = "0x55d398326f99059ff775485246999027b3197955";
+  const hod = "0x19A4866a85c652EB4a2ED44c42e4CB2863a62D51"
+  const oldMarket = "0x681177787efFF296710117782840cfA87662f34E";
   const limitAuction = 1;
   /// DEPLOY MARKET
   const HodooiMarket = await hre.ethers.getContractFactory("HodooiMarket");
