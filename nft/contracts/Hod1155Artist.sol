@@ -11,6 +11,6 @@ contract Hodooi1155NFT is ERC1155Tradeble {
         public
         ERC1155Tradeble(name, symbol)
     {
-        _setBaseMetadataURI("https://nft.hodooi.com/");
+        _setBaseMetadataURI('https://api-test.hodooi.com');
     }
 }

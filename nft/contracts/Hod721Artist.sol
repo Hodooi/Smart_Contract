@@ -13,7 +13,7 @@ contract Hod721Artist is ERC721, Ownable {
 	mapping(uint256 => uint256) public loyaltyFee;
 
 	constructor(string memory name, string memory symbol) public ERC721(name, symbol) {
-		_setBaseURI('https://api.hodooi.com/');
+		_setBaseURI('https://api-test.hodooi.com');
 	}
 
 	/*

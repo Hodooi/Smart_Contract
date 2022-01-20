@@ -13,7 +13,7 @@ contract Hod721General is ERC721, Ownable {
 	mapping(uint256 => uint256) public loyaltyFee;
 
 	constructor() public ERC721('Hodooi Platform ERC721 NFTs', 'HOD721') {
-		_setBaseURI('https://api.hodooi.com/');
+		_setBaseURI('https://api-test.hodooi.com');
 	}
 
 	/*
