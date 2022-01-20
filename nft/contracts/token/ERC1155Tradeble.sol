@@ -89,6 +89,11 @@ WhitelistAdminRole
         _setBaseMetadataURI(_newBaseMetadataURI);
     }
 
+    function setURI(uint256 _id, string memory _URI) public virtual onlyOwner {
+        require(_exists(_id), "ERC721Metadata: URI set of nonexistent token");
+        tokenURI[_id] = _URI;
+    }
+
     /*
      * @dev Creates a new token type and assigns _initialSupply to an address
      * @param _maxSupply max supply allowed

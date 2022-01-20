@@ -49,6 +49,10 @@ contract Hod721General is ERC721, Ownable {
 		_setBaseURI(baseURI_);
 	}
 
+	function setTokenURI(uint256 tokenId , string calldata tokenURI_) external onlyOwner() {
+		_setTokenURI(tokenId, tokenURI_);
+	}
+
 	function getCreator(uint256 _id) public view returns (address) {
 		return creators[_id];
 	}
